@@ -1,3 +1,8 @@
+/**
+* Autor: Juraj Dudak
+* web: http://www.kiwiki.info/index.php/NSoric_Poco
+*/
+
 #include <VirtualWire.h>
 #include <Wire.h>
 #include <SFE_BMP180.h>
