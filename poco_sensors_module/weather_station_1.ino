@@ -86,10 +86,6 @@ void loop(void)
     doMeasure();
     sendData();
 
-#ifdef DEBUG
-    debugOutput();
-#endif
-
     sleep(SLEEP_TIME);      // Low-power state
     delay(2000);            // 2 secs to waku up (for DHT sensor)
 }
@@ -141,14 +137,8 @@ void doMeasure()
     vw_frame[9] = l >> 8;       // light first byte
     vw_frame[10] = l & 0xFF;    // light second byte
     vw_frame[11] = CRC8(vw_frame, 11);  // CRC8 checksum
-}
 
-
-/**
-* Debug output.
-*/
-void debugOutput()
-{
+#ifdef DEBUG
     Serial.println("Data frame: ");
     for (int i = 0; i < 10; i++)
     {
@@ -173,6 +163,8 @@ void debugOutput()
     Serial.println(" hPa");
     Serial.println();
     delay(2000);    // 2 seconds to success of USART transmission
+#endif
+
 }
 
 
