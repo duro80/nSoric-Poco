@@ -24,7 +24,7 @@
 *  3 - 0   Reserved
 */
 #define SENSOR_TYPE       0xF0
-#define SENSOR_ADDRESS    0x2
+#define SENSOR_ADDRESS    0x001E
 #define BATERY_PIN        A0
 #define DHTPIN            2
 #define DHTTYPE           DHT22
@@ -34,7 +34,7 @@
 */
 #define ALTITUDE          284.0
 // 75 => 75*8s = 10min, 1 sleep slot is 8s
-#define SLEEP_TIME          75
+#define SLEEP_TIME        36
 //#define DEBUG
 
 
@@ -83,11 +83,10 @@ void setup(void)
 */
 void loop(void)
 {
+    delay(1000);            // 2 secs to waku up (for DHT sensor)
     doMeasure();
     sendData();
-
-    sleep(SLEEP_TIME);      // Low-power state
-    delay(2000);            // 2 secs to waku up (for DHT sensor)
+    sleep(SLEEP_TIME);      // Low-power state    
 }
 
 
@@ -97,6 +96,18 @@ void loop(void)
 */
 void doMeasure()
 {
+    uint16_t b = analogRead(BATERY_PIN);
+    // Used R divider before ADC input: R1=100k, R2=22k
+    // R(ratio) = 22/(100+22) = 0.18
+    // Measured value is multiplied by 10, because it is sended
+    // as integer
+    float bat = b * 5.0/1024.0 / 0.18 * 10.0;
+    b = (uint8_t)bat;
+    // batery limit = 0.8V    
+    if(b<8){
+        b |= 0b10000000;
+    }
+
     // Read temperature as Celsius
     float t = dht.readTemperature();
     uint16_t tc = t;            // integer part of temperature
@@ -125,10 +136,9 @@ void doMeasure()
 
     uint16_t p = getPressure();
     uint16_t l = LightSensor.GetLightIntensity();
-    uint16_t b = analogRead(BATERY_PIN);
 
     // data frame
-    vw_frame[3] = b >> 3;       // battery
+    vw_frame[3] = b & 0xFF;     // battery
     vw_frame[4] = th;           // temperature first byte
     vw_frame[5] = tl;           // temperature second byte
     vw_frame[6] = hc;           // humidity
@@ -147,7 +157,7 @@ void doMeasure()
     }
     Serial.println();
     Serial.print("battery\t\t: ");
-    Serial.print(b / 1024.0 * 5.0);
+    Serial.print(b/10.0);
     Serial.println(" V");
     Serial.print("Temperature\t: ");
     Serial.print(t);
@@ -192,7 +202,7 @@ void sleep(int sleep8time)
 }
 
 /**
-* Encode the  decimal part of temerature.
+* Encode the  decimal part of temerature.g
 * The result from DHT sensor is coded in BCD.
 * It is necessary (for this communication protocol) encode to binary form.
 * @param tdes Decimal part of temperature
